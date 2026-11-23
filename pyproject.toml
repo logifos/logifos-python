@@ -12,6 +12,8 @@ authors = [{ name = "Ribose Inc.", email = "open.source@ribose.com" }]
 requires-python = ">=3.9"
 
 [tool.setuptools]
-packages = ["logifos"]
 include-package-data = false
 license-files = ["LICENSE.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
