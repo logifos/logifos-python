@@ -6,6 +6,14 @@ build-backend = "setuptools.build_meta"
 name = "logifos"
 version = "0.1.0"
 description = "Python runtime for the logifos math formula renderer"
+readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Ribose Inc.", email = "open.source@ribose.com" }]
 requires-python = ">=3.9"
+
+[tool.setuptools]
+include-package-data = false
+license-files = ["LICENSE.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

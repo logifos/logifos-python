@@ -7,14 +7,27 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        python: [ '3.10', '3.12' ]
+        python: [ '3.9', '3.x' ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install pytest && python -m pytest
+      - name: Build the sdist and Python-only wheel
+        run: |
+          python -m pip install build
+          python -m build --outdir "$RUNNER_TEMP/logifos-dist"
+      - name: Install and qualify outside the checkout
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/logifos-consumer"
+          "$RUNNER_TEMP/logifos-consumer/bin/python" -m pip install pytest
+          "$RUNNER_TEMP/logifos-consumer/bin/python" -m pip install --no-deps "$RUNNER_TEMP"/logifos-dist/*.whl
+          mkdir -p "$RUNNER_TEMP/logifos-outside"
+          cd "$RUNNER_TEMP/logifos-outside"
+          "$RUNNER_TEMP/logifos-consumer/bin/python" -I "$GITHUB_WORKSPACE/tests/test_distribution.py" "$RUNNER_TEMP"/logifos-dist/*.whl
+          "$RUNNER_TEMP/logifos-consumer/bin/python" -I -m pytest --import-mode=importlib -p no:cacheprovider "$GITHUB_WORKSPACE/tests/test_render.py"
