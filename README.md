@@ -21,23 +21,31 @@ they do not establish native rendering or native platform support.
 
 ## Install from this checkout
 
-Run these commands in a Unix shell from the repository root:
+Run these commands in a Unix shell from the repository root, and stay in the
+same shell for the checks below. The virtual environment and build output go in
+a temporary directory, because the checks require the installed package to live
+outside the checkout.
 
 ```sh
-python3 -m venv .venv
-.venv/bin/python -m pip install build pytest
-.venv/bin/python -m build
-.venv/bin/python -m pip install --no-deps dist/*.whl
+checkout="$(pwd)"
+scratch="$(mktemp -d)"
+python3 -m venv "$scratch/venv"
+python="$scratch/venv/bin/python"
+"$python" -m pip install build pytest
+"$python" -m build --outdir "$scratch/dist"
+"$python" -m pip install --no-deps "$scratch"/dist/*.whl
 ```
 
 ## Check the installed package
 
-Run the consumer checks with isolated imports, so they use the installed wheel
-and not the source tree:
+Run the consumer checks from outside the checkout with isolated imports, so
+they use the installed wheel and not the source tree:
 
 ```sh
-.venv/bin/python -I tests/test_distribution.py dist/*.whl
-.venv/bin/python -I -m pytest --import-mode=importlib tests/test_render.py
+cd "$scratch"
+"$python" -I "$checkout/tests/test_distribution.py" "$scratch"/dist/*.whl
+"$python" -I -m pytest --import-mode=importlib -p no:cacheprovider "$checkout/tests/test_render.py"
+cd "$checkout"
 ```
 
 The distribution check verifies the wheel's files, metadata and recorded
