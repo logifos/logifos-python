@@ -1,4 +1,4 @@
-"""Qualify a built wheel and its installed bootstrap outside the source tree.
+"""Qualify a built wheel and its installed runtime outside the source tree.
 
 Run with the target environment's Python, using -I and an external working
 directory: python -I /checkout/tests/test_distribution.py /path/to/logifos.whl
@@ -35,7 +35,7 @@ class DistributionSmoke(unittest.TestCase):
             DIST_INFO + "LICENSE.txt", DIST_INFO + "licenses/LICENSE.txt"
         )]
         self.assertEqual(len(licenses), 1, "wheel must carry the MIT notice")
-        expected = {"logifos/__init__.py", licenses[0]}
+        expected = {"logifos/__init__.py", "logifos/_runtime.py", licenses[0]}
         expected.update(DIST_INFO + name for name in (
             "METADATA", "WHEEL", "top_level.txt", "RECORD"
         ))
@@ -43,7 +43,7 @@ class DistributionSmoke(unittest.TestCase):
         self.assertEqual(hashlib.sha256(self.wheel.read(licenses[0])).hexdigest(),
                          LICENSE_SHA256)
 
-    def test_wheel_metadata_preserves_bootstrap_contract(self):
+    def test_wheel_metadata_preserves_package_contract(self):
         info = BytesParser().parsebytes(self.wheel.read(DIST_INFO + "METADATA"))
         self.assertEqual(info["Name"], "logifos")
         self.assertEqual(info["Version"], VERSION)
@@ -78,21 +78,23 @@ class DistributionSmoke(unittest.TestCase):
         self.assertEqual(metadata.version("logifos"), VERSION)
         distribution = metadata.distribution("logifos")
         self.assertEqual(imported, Path(distribution.locate_file("logifos/__init__.py")).resolve())
-        self.assertEqual(imported.read_bytes(), self.wheel.read("logifos/__init__.py"))
+        for name in ("__init__.py", "_runtime.py"):
+            installed = distribution.locate_file("logifos/" + name)
+            self.assertEqual(installed.read_bytes(), self.wheel.read("logifos/" + name))
         installed_licenses = [file for file in distribution.files
                               if str(file).endswith("/LICENSE.txt")]
         self.assertEqual(len(installed_licenses), 1)
         self.assertEqual(hashlib.sha256(distribution.locate_file(installed_licenses[0]).read_bytes()).hexdigest(),
                          LICENSE_SHA256)
 
-    def test_installed_render_explicitly_refuses(self):
+    def test_installed_explicit_library_selection_refuses_missing_library(self):
         import logifos
 
         for fmt in (None, "svg", "png"):
             with self.subTest(format=fmt):
                 options = {} if fmt is None else {"fmt": fmt}
-                with self.assertRaisesRegex(NotImplementedError, "engine boundary lands"):
-                    logifos.render({}, **options)
+                with self.assertRaises(logifos.NativeLibraryError):
+                    logifos.render({}, library_path="", **options)
 
 
 if __name__ == "__main__":
