@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logifos"
+version = "0.1.0"
+description = "Python runtime for the logifos math formula renderer"
+license = { text = "MIT" }
+authors = [{ name = "Ribose Inc.", email = "open.source@ribose.com" }]
+requires-python = ">=3.9"
